@@ -1,0 +1,48 @@
+{
+  "entities": {
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Represents an income or expense record",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "The ID of the user who owns this transaction" },
+        "amount": { "type": "number", "description": "The amount of the transaction" },
+        "type": { "type": "string", "enum": ["income", "expense"], "description": "Whether it's an income or expense" },
+        "category": { "type": "string", "description": "The category of the transaction" },
+        "description": { "type": "string", "description": "A short description of the transaction" },
+        "date": { "type": "string", "format": "date-time", "description": "When the transaction occurred" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "amount", "type", "category", "date"]
+    },
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Information about the user",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "currency": { "type": "string" },
+        "monthlyBudget": { "type": "number" },
+        "photoURL": { "type": "string" },
+        "lastSeen": { "type": "string" },
+        "timeFormat": { "type": "string", "enum": ["12h", "24h"] },
+        "categories": { "type": "object" },
+        "savingsGoals": { "type": "array" },
+        "categoryBudgets": { "type": "array" }
+      },
+      "required": ["email", "displayName"]
+    }
+  },
+  "firestore": {
+    "transactions": {
+      "schema": "Transaction",
+      "description": "Global collection of transactions"
+    },
+    "users": {
+      "schema": "UserProfile",
+      "description": "Public/Private user data"
+    }
+  }
+}

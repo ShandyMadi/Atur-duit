@@ -1,0 +1,70 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net - Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Hardened Global Helpers (Phase 3 Primitives) ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-\\.]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Entity Validation Blueprints (Pillar 2) ---
+    
+    function isValidTransaction(data) {
+      return data.userId == request.auth.uid &&
+             data.amount is number && data.amount > 0 &&
+             data.type in ['income', 'expense'] &&
+             data.category is string && data.category.size() <= 128 &&
+             (data.description == null || (data.description is string && data.description.size() <= 500)) &&
+             (data.time == null || (data.time is string)) &&
+             data.date is string && data.date.size() <= 128;
+    }
+
+    function isValidUserProfile(data, isCreate) {
+      return (!isCreate || (data.email is string && data.displayName is string)) &&
+             (data.email == null || data.email is string) &&
+             (data.displayName == null || data.displayName is string) &&
+             (data.currency == null || data.currency is string) &&
+             (data.monthlyBudget == null || data.monthlyBudget is number) &&
+             (data.lastSeen == null || data.lastSeen is string) &&
+             (data.photoURL == null || data.photoURL is string) &&
+             (data.timeFormat == null || data.timeFormat in ['12h', '24h']) &&
+             (data.categories == null || data.categories is map) &&
+             (data.savingsGoals == null || data.savingsGoals is list) &&
+             (data.categoryBudgets == null || data.categoryBudgets is list);
+    }
+
+    // --- Collection Rules ---
+
+    // Transactions Collection
+    match /transactions/{transactionId} {
+      allow read, write: if isSignedIn() && (resource == null || resource.data.userId == request.auth.uid);
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+      allow list: if isSignedIn();
+      allow get: if isSignedIn();
+    }
+  }
+}
